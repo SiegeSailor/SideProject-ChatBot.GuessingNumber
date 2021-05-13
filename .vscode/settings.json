@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/bad92912-4cb1-466f-857b-dd18845d9dbd/resourceGroups/guessing-number/providers/Microsoft.Web/sites/guessing-number",
+    "appService.deploySubpath": "."
+}
