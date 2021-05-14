@@ -5,24 +5,26 @@ This bot has been created using [Bot Framework](https://dev.botframework.com), i
 ## Prerequisites
 
 - [Node.js](https://nodejs.org) version 10.14 or higher
-    ```bash
-    # determine node version
-    node --version
-    ```
+  ```bash
+  # determine node version
+  node --version
+  ```
+
 # To run the bot locally
+
 - Download the bot code from the Build blade in the Azure Portal (make sure you click "Yes" when asked "Include app settings in the downloaded zip file?").
-    - If you clicked "No" you will need to copy all the Application Settings properties from your App Service to your local .env file.
+  - If you clicked "No" you will need to copy all the Application Settings properties from your App Service to your local .env file.
 - Install modules
 
-    ```bash
-    npm install
-    ```
+  ```bash
+  npm install
+  ```
 
 - Run the bot
 
-    ```bash
-    npm start
-    ```
+  ```bash
+  npm start
+  ```
 
 ## Testing the bot using Bot Framework Emulator
 
@@ -54,3 +56,8 @@ To learn more about deploying a bot to Azure, see [Deploy your bot to Azure](htt
 - [Channels and Bot Connector Service](https://docs.microsoft.com/en-us/azure/bot-service/bot-concepts?view=azure-bot-service-4.0)
 - [Restify](https://www.npmjs.com/package/restify)
 - [dotenv](https://www.npmjs.com/package/dotenv)
+
+# Notes
+
+- MicrosoftAppId: `d30a7cb2-7553-42c7-b0fe-68c4fd6c3fd5`
+- MicrosoftAppPassword: `d+wG)2Iyfb^Czf$ZQTRHs8j=`
