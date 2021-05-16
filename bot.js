@@ -137,24 +137,20 @@ class EchoBot extends ActivityHandler {
           this.clear();
           break;
         case Config.CommandHelp:
-          try {
-            await context.sendActivity(
-              MessageFactory.text(
-                [
-                  `開始新一輪遊戲，使用${this.createCommand(Config.CommandSet)}設定目標數字。設定後，使用${this.createCommand(Config.CommandGuess)}猜數字。`,
-                  `要查看現在狀態，輸入${this.createCommand(Config.CommandStatus)}查看，或者輸入${this.createCommand(Config.CommandClear)}公布答案並清空狀態。`,
-                  `輸入${this.createCommand(Config.CommandHelp)}再次查看以上指令。`,
-                ].join(Config.NewLine),
-                [
-                  `開始新一輪遊戲，使用${this.createCommand(Config.CommandSet)}設定目標數字。設定後，使用${this.createCommand(Config.CommandGuess)}猜數字。`,
-                  `要查看現在狀態，輸入${this.createCommand(Config.CommandStatus)}查看，或者輸入${this.createCommand(Config.CommandClear)}公布答案並清空狀態。`,
-                  `輸入${this.createCommand(Config.CommandHelp)}再次查看以上指令。`,
-                ].join(Config.NewLine)
-              )
-            );
-          } catch (error) {
-            await context.sendActivity(MessageFactory.text(`遇到 ${error.message} 錯誤，請回報給 Ken.Zhang。`));
-          }
+          await context.sendActivity(
+            MessageFactory.text(
+              [
+                `開始新一輪遊戲，使用${this.createCommand(Config.CommandSet)}設定目標數字。設定後，使用${this.createCommand(Config.CommandGuess)}猜數字。`,
+                `要查看現在狀態，輸入${this.createCommand(Config.CommandStatus)}查看，或者輸入${this.createCommand(Config.CommandClear)}公布答案並清空狀態。`,
+                `輸入${this.createCommand(Config.CommandHelp)}再次查看以上指令。`,
+              ].join(Config.NewLine),
+              [
+                `開始新一輪遊戲，使用${this.createCommand(Config.CommandSet)}設定目標數字。設定後，使用${this.createCommand(Config.CommandGuess)}猜數字。`,
+                `要查看現在狀態，輸入${this.createCommand(Config.CommandStatus)}查看，或者輸入${this.createCommand(Config.CommandClear)}公布答案並清空狀態。`,
+                `輸入${this.createCommand(Config.CommandHelp)}再次查看以上指令。`,
+              ].join(Config.NewLine)
+            )
+          );
           break;
       }
 
