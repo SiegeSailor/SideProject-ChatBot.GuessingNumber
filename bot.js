@@ -1,33 +1,225 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-const { ActivityHandler, MessageFactory } = require("botbuilder");
+const { ActivityHandler, MessageFactory } = require('botbuilder');
+
+const Config = {
+  NewLine: '\r\n',
+  CommandSet: 'set',
+  CommandGuess: 'guess',
+  CommandStatus: 'status',
+  CommandClear: 'clear',
+  CommandHelp: 'help',
+  FormatItalic: 'italic',
+  FormatBold: 'bold',
+};
 
 class EchoBot extends ActivityHandler {
+  CurrentNumber = [];
+  History = [];
+  WelcomeText = '';
+
   constructor() {
     super();
     // See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
+    this.CurrentNumber = [];
+    this.History = [];
+    this.WelcomeText = [
+      `開始新一輪遊戲，使用${this.createCommand(Config.CommandSet)}設定目標數字。設定後，使用${this.createCommand(Config.CommandGuess)}猜數字。`,
+      `要查看現在狀態，輸入${this.createCommand(Config.CommandStatus)} 查看，或者輸入${this.createCommand(Config.CommandClear)}公布答案並清空狀態。`,
+      `輸入${this.createCommand(Config.CommandHelp)}再次查看以上指令。`,
+    ].join(Config.NewLine);
+
     this.onMessage(async (context, next) => {
-      const replyText = `Echo: ${context.activity.text}`;
-      await context.sendActivity(MessageFactory.text(replyText, replyText));
+      const {
+        text,
+        timestamp,
+        from: { name },
+      } = context.activity;
+
+      if (
+        text.split(' ').reduce((accumulator, currentValue) => {
+          if (Object.values(Config).includes(currentValue)) accumulator = accumulator + 1;
+          return accumulator;
+        }, 0) > 1
+      ) {
+        await context.sendActivity(MessageFactory.text('不可同時輸入多個指令。', '不可同時輸入多個指令。'));
+        await next();
+        return;
+      }
+
+      if (text.includes(Config.CommandGuess)) {
+        const [_, guessNumber] = text.split(' ');
+
+        try {
+          this.verifyCurrent();
+          this.verifyInput(guessNumber);
+        } catch (error) {
+          await context.sendActivity(MessageFactory.text(error.message));
+          await next();
+          return;
+        }
+
+        const listOfGuessNumber = guessNumber.split('');
+        const { a, b } = listOfGuessNumber.reduce(
+          (accumulator, currentValue) => {
+            if (this.CurrentNumber.indexOf(currentValue) === listOfGuessNumber.indexOf(currentValue)) {
+              accumulator.a = accumulator.a + 1;
+            } else if (this.CurrentNumber.includes(currentValue)) {
+              accumulator.b = accumulator.b + 1;
+            }
+
+            return accumulator;
+          },
+          { a: 0, b: 0 }
+        );
+        const result = `${a}A${b}B`;
+
+        this.addHistory({ timestamp, name, guess: guessNumber, result });
+
+        if (a === 4) {
+          await context.sendActivity(
+            MessageFactory.text(
+              `${result}！恭喜猜到正確答案${this.formatMessage(Config.FormatItalic, this.CurrentNumber.join(''))}。使用${this.createCommand(Config.CommandSet)}進行下一輪遊戲。`,
+              `${result}！恭喜猜到正確答案${this.formatMessage(Config.FormatItalic, this.CurrentNumber.join(''))}。使用${this.createCommand(Config.CommandSet)}進行下一輪遊戲。`
+            )
+          );
+          this.clear();
+          await next();
+          return;
+        }
+
+        await context.sendActivity(MessageFactory.text(result, result));
+      }
+
+      switch (text) {
+        case Config.CommandSet:
+          try {
+            if (this.CurrentNumber.length > 0) throw Error(`已設定目標數字。若要重新開始，請使用${this.createCommand(Config.CommandSet)}。`);
+          } catch (error) {
+            await context.sendActivity(MessageFactory.text(error.message));
+            await next();
+            return;
+          }
+          const newNumber = [];
+          for (let i = 0; i < 4; i = i + 1) {
+            let randomNumber = '';
+            while (!randomNumber || newNumber.includes(randomNumber) || (newNumber.length === 0 && randomNumber === '0')) {
+              randomNumber = String(Math.floor(Math.random() * 9));
+            }
+            newNumber.push(randomNumber);
+          }
+          this.CurrentNumber = newNumber;
+          this.addHistory({ timestamp, name, guess: undefined, result: '設定了目標數字。' });
+          await context.sendActivity(MessageFactory.text(`成功設定目標數字。`, `成功設定目標數字。`));
+          break;
+        case Config.CommandStatus:
+          try {
+            this.verifyCurrent();
+          } catch (error) {
+            await context.sendActivity(MessageFactory.text(error.message));
+            await next();
+            return;
+          }
+
+          await context.sendActivity(MessageFactory.text(this.createHistoryText('目前遊戲狀態：'), this.createHistoryText('目前遊戲狀態：')));
+          break;
+        case Config.CommandClear:
+          try {
+            this.verifyCurrent();
+          } catch (error) {
+            await context.sendActivity(MessageFactory.text(error.message));
+            await next();
+            return;
+          }
+
+          await context.sendActivity(MessageFactory.text(this.createHistoryText('這局遊戲紀錄：'), this.createHistoryText('這局遊戲紀錄：')));
+          await context.sendActivity(
+            MessageFactory.text(
+              `答案是 ${this.formatMessage(Config.FormatItalic, this.CurrentNumber.join(''))}。請輸入${this.createCommand(Config.CommandSet)}開始新一輪遊戲。`,
+              `答案是 ${this.formatMessage(Config.FormatItalic, this.CurrentNumber.join(''))}。請輸入${this.createCommand(Config.CommandSet)}開始新一輪遊戲。`
+            )
+          );
+          this.clear();
+          break;
+        case Config.CommandHelp:
+          await context.sendActivity(MessageFactory.text(this.WelcomeText, this.WelcomeText));
+          break;
+      }
+
       // By calling next() you ensure that the next BotHandler is run.
       await next();
     });
 
     this.onMembersAdded(async (context, next) => {
       const membersAdded = context.activity.membersAdded;
-      const welcomeText = "Hello and welcome!";
+
       for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
         if (membersAdded[cnt].id !== context.activity.recipient.id) {
-          await context.sendActivity(
-            MessageFactory.text(welcomeText, welcomeText)
-          );
+          await context.sendActivity(MessageFactory.text(this.WelcomeText, this.WelcomeText));
         }
       }
       // By calling next() you ensure that the next BotHandler is run.
       await next();
     });
   }
+
+  formatMessage = (style, input) => {
+    switch (style) {
+      case Config.FormatBold:
+        return ` **${input}** `;
+      case Config.FormatItalic:
+        return ` *${input}* `;
+    }
+  };
+
+  createCommand = (command) => {
+    switch (command) {
+      case Config.CommandGuess:
+        return `${this.formatMessage(Config.FormatBold, command)} ${this.formatMessage(Config.FormatItalic, '<number>')}`;
+      case Config.CommandSet:
+      case Config.CommandStatus:
+      case Config.CommandClear:
+      case Config.CommandHelp:
+        return `${this.formatMessage(Config.FormatBold, command)}`;
+    }
+  };
+
+  addHistory = (config) => {
+    if (!Object.keys(config).every((key) => ['timestamp', 'name', 'guess', 'result'].includes(key))) throw Error('History 格式錯誤。');
+    this.History.push(config);
+  };
+
+  verifyInput = (inputNumber) => {
+    if (!inputNumber) throw Error('請輸入 4 位不重複且開頭不為 0 的數字。');
+    if (!/^\d+$/.test(inputNumber)) throw Error('只能輸入數字。');
+    if (inputNumber.length !== 4) throw Error('必須為 4 位數字。');
+    if (inputNumber[0] === '0') throw Error('第一個數字不可為 0。');
+    if (inputNumber.split('').some((integer, index) => inputNumber.split('').indexOf(integer) !== index)) throw Error('不可有重複的數字。');
+  };
+
+  verifyCurrent = () => {
+    if (this.CurrentNumber.length === 0) throw Error('尚未設定目標數字。');
+    if (this.History.length === 0) throw Error(`尚未有人開始猜數字，請使用${this.createCommand(Config.CommandGuess)}進行遊戲。`);
+  };
+
+  createHistoryText = (start) =>
+    [
+      start,
+      ...this.History.map(({ timestamp, name, guess, result }) => {
+        const readableTimestamp = `${new Date(timestamp).toLocaleString()}：`;
+        if (!guess) {
+          return `${readableTimestamp}${name} ${result}`;
+        } else {
+          return `${readableTimestamp}${name} 猜了${this.formatMessage(Config.FormatItalic, guess)}。結果是${this.formatMessage(Config.FormatBold, result)}。`;
+        }
+      }),
+    ].join(Config.NewLine);
+
+  clear = () => {
+    this.CurrentNumber = [];
+    this.History = [];
+  };
 }
 
 module.exports.EchoBot = EchoBot;
