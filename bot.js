@@ -17,18 +17,12 @@ const Config = {
 class EchoBot extends ActivityHandler {
   CurrentNumber = [];
   History = [];
-  WelcomeText = '';
 
   constructor() {
     super();
     // See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
     this.CurrentNumber = [];
     this.History = [];
-    this.WelcomeText = [
-      `開始新一輪遊戲，使用${this.createCommand(Config.CommandSet)}設定目標數字。設定後，使用${this.createCommand(Config.CommandGuess)}猜數字。`,
-      `要查看現在狀態，輸入${this.createCommand(Config.CommandStatus)} 查看，或者輸入${this.createCommand(Config.CommandClear)}公布答案並清空狀態。`,
-      `輸入${this.createCommand(Config.CommandHelp)}再次查看以上指令。`,
-    ].join(Config.NewLine);
 
     this.onMessage(async (context, next) => {
       const {
@@ -143,7 +137,24 @@ class EchoBot extends ActivityHandler {
           this.clear();
           break;
         case Config.CommandHelp:
-          await context.sendActivity(MessageFactory.text(this.WelcomeText, this.WelcomeText));
+          try {
+            await context.sendActivity(
+              MessageFactory.text(
+                [
+                  `開始新一輪遊戲，使用${this.createCommand(Config.CommandSet)}設定目標數字。設定後，使用${this.createCommand(Config.CommandGuess)}猜數字。`,
+                  `要查看現在狀態，輸入${this.createCommand(Config.CommandStatus)}查看，或者輸入${this.createCommand(Config.CommandClear)}公布答案並清空狀態。`,
+                  `輸入${this.createCommand(Config.CommandHelp)}再次查看以上指令。`,
+                ].join(Config.NewLine),
+                [
+                  `開始新一輪遊戲，使用${this.createCommand(Config.CommandSet)}設定目標數字。設定後，使用${this.createCommand(Config.CommandGuess)}猜數字。`,
+                  `要查看現在狀態，輸入${this.createCommand(Config.CommandStatus)}查看，或者輸入${this.createCommand(Config.CommandClear)}公布答案並清空狀態。`,
+                  `輸入${this.createCommand(Config.CommandHelp)}再次查看以上指令。`,
+                ].join(Config.NewLine)
+              )
+            );
+          } catch (error) {
+            await context.sendActivity(MessageFactory.text(`遇到 ${error.message} 錯誤，請回報給 Ken.Zhang。`));
+          }
           break;
       }
 
@@ -156,7 +167,9 @@ class EchoBot extends ActivityHandler {
 
       for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
         if (membersAdded[cnt].id !== context.activity.recipient.id) {
-          await context.sendActivity(MessageFactory.text(this.WelcomeText, this.WelcomeText));
+          await context.sendActivity(
+            MessageFactory.text(`請輸入${this.createCommand(Config.CommandHelp)}瞭解如何遊戲。`, `請輸入${this.createCommand(Config.CommandHelp)}瞭解如何遊戲。`)
+          );
         }
       }
       // By calling next() you ensure that the next BotHandler is run.
@@ -164,23 +177,29 @@ class EchoBot extends ActivityHandler {
     });
   }
 
-  formatMessage = (style, input) => {
+  formatMessage = (style, input, noSpace = false) => {
+    let string = '';
     switch (style) {
       case Config.FormatBold:
-        return ` **${input}** `;
+        string = ` **${input}** `;
+        break;
       case Config.FormatItalic:
-        return ` *${input}* `;
+        string = ` *${input}* `;
+        break;
     }
+
+    return noSpace ? string.trim() : string;
   };
 
   createCommand = (command) => {
     switch (command) {
       case Config.CommandGuess:
-        return `${this.formatMessage(Config.FormatBold, command)} ${this.formatMessage(Config.FormatItalic, '<number>')}`;
+        return `${this.formatMessage(Config.FormatBold, command)}${this.formatMessage(Config.FormatItalic, 'number', true)} `;
       case Config.CommandSet:
       case Config.CommandStatus:
       case Config.CommandClear:
       case Config.CommandHelp:
+      default:
         return `${this.formatMessage(Config.FormatBold, command)}`;
     }
   };
