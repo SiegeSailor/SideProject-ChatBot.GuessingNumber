@@ -26,10 +26,11 @@ class EchoBot extends ActivityHandler {
 
     this.onMessage(async (context, next) => {
       const {
-        text,
+        text: _text,
         timestamp,
         from: { name },
       } = context.activity;
+      const text = _text.replace('guessing-number ', '');
 
       if (
         text.split(' ').reduce((accumulator, currentValue) => {
@@ -164,7 +165,14 @@ class EchoBot extends ActivityHandler {
       for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
         if (membersAdded[cnt].id !== context.activity.recipient.id) {
           await context.sendActivity(
-            MessageFactory.text(`請輸入${this.createCommand(Config.CommandHelp)}瞭解如何遊戲。`, `請輸入${this.createCommand(Config.CommandHelp)}瞭解如何遊戲。`)
+            MessageFactory.text(
+              `Tag 此 Bot 並在後面加上指令以進行遊戲，如 ${this.formatMessage(Config.FormatItalic, '@guessing-number help', true)}。輸入${this.createCommand(
+                Config.CommandHelp
+              )}瞭解如何遊戲。`,
+              `Tag 此 Bot 並在後面加上指令以進行遊戲，如 ${this.formatMessage(Config.FormatItalic, '@guessing-number help', true)}。輸入${this.createCommand(
+                Config.CommandHelp
+              )}瞭解如何遊戲。`
+            )
           );
         }
       }
